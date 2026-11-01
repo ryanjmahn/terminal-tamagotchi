@@ -87,15 +87,19 @@ def feed(pet, now, lines=0):
     return "hatched" if old_level == 0 else "leveled"
 
 
-def feeling(pet, now, tokens=0, limit_used=0):
+def feeling(pet, now, tokens=0, limit_used=0, agent_state=None):
     if pet["level"] == 0:
         return "egg"
     if limit_used >= DEAD_LIMIT:
         return "dead"
+    if agent_state == "waiting":
+        return "waiting"
     if pet["leveled_at"] is not None and 0 <= now - pet["leveled_at"] < ECSTATIC_SECONDS:
         return "ecstatic"
     if limit_used >= NERVOUS_LIMIT:
         return "nervous"
+    if agent_state in ("looping", "finished"):
+        return agent_state
     if 1 <= datetime.fromtimestamp(now).hour < 5:
         return "sleepy"
     if pet["hunger"] < 1 or pet["mood"] < 1:

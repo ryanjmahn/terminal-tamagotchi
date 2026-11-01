@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from tamagotchi import art, claude, cli, pet as pet_logic, storage
+from tamagotchi import agent, art, claude, cli, pet as pet_logic, storage
 
 DAY = pet_logic.SECONDS_PER_DAY
 NOON = datetime(2026, 1, 1, 12).timestamp()
@@ -226,6 +226,9 @@ class CliTest(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         patcher = mock.patch.object(claude, "LIMIT_PATH", Path(tmp.name) / "limit.json")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch.object(agent, "AGENT_PATH", Path(tmp.name) / "agent.json")
         patcher.start()
         self.addCleanup(patcher.stop)
 

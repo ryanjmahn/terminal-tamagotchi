@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
-from tamagotchi import art, claude, cli, pet as pet_logic, storage
+from tamagotchi import agent, art, claude, cli, pet as pet_logic, storage
 
 DAY = pet_logic.SECONDS_PER_DAY
 NOON = datetime(2026, 1, 15, 12).timestamp()
@@ -126,6 +126,7 @@ class WeeklyLimitTest(unittest.TestCase):
         for target, attribute, value in (
             (claude, "LIMIT_PATH", self.limit_path),
             (claude, "PROJECTS", folder / "no-logs"),
+            (agent, "AGENT_PATH", folder / "agent.json"),
             (storage, "PATH", self.pet_path),
         ):
             patcher = mock.patch.object(target, attribute, value)

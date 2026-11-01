@@ -50,8 +50,11 @@ Your next commit there feeds your pet. You get one pet, shared across every repo
 | `pet` | Show your pet, its stats, and what it's feeling |
 | `pet feed` | Give it a snack by hand (no judgment) |
 | `pet name <name>` | Rename it (the default is Porky) |
+| `pet watch` | Keep your pet on screen, animated and live (ctrl-c to quit) |
 | `pet install` | Feed your pet on every commit in the current repo |
 | `pet uninstall` | Remove the hook from the current repo |
+| `pet install-agent` | Let your pet react to Claude Code |
+| `pet uninstall-agent` | Stop reacting to Claude Code |
 | `pet reset` | Start over with a new egg (it asks first) |
 
 ## How feeding works
@@ -110,7 +113,10 @@ Rewards stop growing at 200 lines, so a 2000-line commit is a very expensive way
 | `╥ ﹏ ╥` | Sad | Nearly out of hunger or mood |
 | `• ﹏ •` | Hungry | About a day since its last snack |
 | `x _ x` | Dead (for now) | Weekly Claude limit used up, until it resets |
+| `◕ o ◕` | Calling you | Claude Code is waiting for your approval |
 | `◉ ﹏ ◉` | Nervous | 80%+ of your weekly Claude limit used |
+| `@ ﹏ @` | Worried | Claude Code has been going for 75+ tool calls or 20+ minutes |
+| `^ ▽ ^` | Cheering | Claude Code just finished |
 | `◉ ‿ ◉` | Wired | 250k+ Claude Code tokens today |
 | `◕ ‿ ◕` | Happy | Well fed and in a good mood |
 | `• ‿ •` | Content | Everything else |
@@ -151,6 +157,33 @@ Claude Code only shares this percentage with status line commands, so add this t
 
 Your pet then appears in Claude Code's status line, and `pet` shows the last percentage it saw. That number only updates while Claude Code is running. If you already have a status line, adding this replaces it.
 
+### Coding agent mode
+
+Your pet can watch Claude Code work:
+
+```sh
+pet install-agent
+```
+
+Restart Claude Code, then run `pet watch` in a terminal off to the side. Your pet shows what Claude is up to, cheers when it finishes, and starts worrying during very long runs. On macOS you also get a notification when Claude needs your approval, and when a run of 5+ minutes finishes.
+
+```
+   ╭─────────╮
+   │  ◕ o ◕  │   Porky  (lvl 4)
+   ╰─┬─────┬─╯   ♥♥♥♥♡  hunger
+     ┘     └     ★★★★☆  mood
+                 🔥 6-day streak
+                 👀 claude needs your approval!
+
+   "CLAUDE NEEDS YOU"
+```
+
+This adds hooks to `~/.claude/settings.json` and leaves the rest of the file alone, and `pet uninstall-agent` takes them back out. The hooks receive your prompts and tool output, but your pet only uses the event name, session id and notification type, and it doesn't save or send any of it. It follows one session at a time, so with several open, the most recently active one wins.
+
+## Animations
+
+`pet` plays a quick animation when you run it in a terminal, and `pet watch` keeps it going: your pet blinks, sweats, snores and wiggles depending on its mood. Piped output and terminals under 70 columns just get the still picture.
+
 ## Good to know
 
 - **It can't block your commits.** The hook runs after the commit already exists. If anything goes wrong, you get at most a one-line warning.
@@ -172,7 +205,7 @@ The hook tests run real git in a temporary repo with a temporary home folder, so
 Ideas for later:
 
 - **Sick when CI fails:** a GitHub Action or check that marks the pet sick when builds or tests are red
-- **Coding agent mode:** watch Claude Code (or another agent) and react: cheer when it finishes a task, get nervous in long loops, ping you when it's waiting for approval
+- **More agents:** coding agent mode for agents other than Claude Code
 - **Bad-habit reactions:** look scared after a force-push to main
 - **GitHub profile pet:** show it in your profile README with a GitHub Action that updates it daily
 - **Friends:** compare pets with friends, leaderboards

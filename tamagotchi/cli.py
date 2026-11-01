@@ -3,7 +3,7 @@ import json
 import sys
 import time
 
-from tamagotchi import art, claude, hooks, pet as pet_logic, storage
+from tamagotchi import agent, art, claude, hooks, pet as pet_logic, storage
 
 MAX_NAME_LENGTH = 20
 
@@ -27,7 +27,62 @@ def parse_args(argv):
     commands.add_parser("uninstall", help="remove the hook from this repo")
     commands.add_parser("reset", help="start over with a new egg")
     commands.add_parser("statusline", help="status line for Claude Code, which also tracks your weekly limit")
+    commands.add_parser("watch", help="keep your pet on screen, animated and live (ctrl-c to quit)")
+    commands.add_parser("install-agent", help="let your pet react to Claude Code")
+    commands.add_parser("uninstall-agent", help="stop reacting to Claude Code")
+    commands.add_parser("agent-event", help="used by the Claude Code hooks")
     return parser.parse_args(argv)
+
+
+def current_mood(pet, now):
+    """Return the pet's feeling, plus the extra rows to draw with it."""
+    tokens = claude.tokens_today(now)
+    limit = claude.weekly_limit(now)
+    status = agent.status(now)
+    feeling = pet_logic.feeling(pet, now, tokens, limit[0] if limit else 0, status["state"] if status else None)
+    return feeling, {"tokens": tokens, "limit": limit, "agent": status}
+
+
+def agent_event():
+    # Runs inside Claude Code, and printing here could feed text into your conversation. So: silence.
+    try:
+        agent.handle(json.load(sys.stdin), time.time())
+    except Exception:
+        pass
+    return 0
+
+
+def watch():
+    now = time.time()
+    if not art.can_animate():
+        pet = load_pet(now)
+        feeling, extras = current_mood(pet, now)
+        print(art.render(pet, feeling, **extras))
+        return 0
+
+    # The alternate screen is a blank canvas, and leaving it restores your terminal as it was.
+    sys.stdout.write("\033[?1049h\033[?25l")
+    try:
+        frame = 0
+        shown = None
+        while True:
+            # Reading logs is slower than a frame, so refresh the data every couple of seconds.
+            if frame % 5 == 0:
+                now = time.time()
+                pet = load_pet(now)
+                feeling, extras = current_mood(pet, now)
+                if feeling != shown or frame % 100 == 0:
+                    shown, line = feeling, art.reaction(pet, feeling)
+            output = art.render(pet, feeling, frame=frame, line=line, **extras)
+            sys.stdout.write(f"\033[H\033[J\n{output}\n\n   ctrl-c to quit\n")
+            sys.stdout.flush()
+            frame += 1
+            time.sleep(0.4)
+    except KeyboardInterrupt:
+        return 0
+    finally:
+        sys.stdout.write("\033[?25h\033[?1049l")
+        sys.stdout.flush()
 
 
 def statusline():
@@ -36,8 +91,9 @@ def statusline():
         now = time.time()
         claude.save_limit(json.load(sys.stdin))
         limit = claude.weekly_limit(now)
+        status = agent.status(now)
         pet = load_pet(now)
-        feeling = pet_logic.feeling(pet, now, limit_used=limit[0] if limit else 0)
+        feeling = pet_logic.feeling(pet, now, 0, limit[0] if limit else 0, status["state"] if status else None)
         print(art.render_statusline(pet, feeling, limit))
     except Exception:
         pass
@@ -84,6 +140,14 @@ def main(argv=None):
         return manage_hook(hooks.uninstall)
     if args.command == "statusline":
         return statusline()
+    if args.command == "agent-event":
+        return agent_event()
+    if args.command == "install-agent":
+        return manage_hook(lambda: agent.install(sys.executable))
+    if args.command == "uninstall-agent":
+        return manage_hook(agent.uninstall)
+    if args.command == "watch":
+        return watch()
 
     now = time.time()
     pet = load_pet(now)
@@ -104,10 +168,15 @@ def main(argv=None):
         pet = pet_logic.new_pet(now)
 
     storage.save(pet)
-    tokens = claude.tokens_today(now)
-    limit = claude.weekly_limit(now)
-    limit_used = limit[0] if limit else 0
-    print(art.render(pet, pet_logic.feeling(pet, now, tokens, limit_used), event, tokens, limit))
+    feeling, extras = current_mood(pet, now)
+    if args.command is None and art.can_animate():
+        line = art.reaction(pet, feeling)
+        try:
+            art.play(lambda frame: art.render(pet, feeling, frame=frame, line=line, **extras))
+        except KeyboardInterrupt:
+            pass
+    else:
+        print(art.render(pet, feeling, event, **extras))
     return 0
 
 
