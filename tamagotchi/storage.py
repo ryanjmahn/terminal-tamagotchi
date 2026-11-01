@@ -23,9 +23,13 @@ def load():
     return None
 
 
-def save(pet):
-    PATH.parent.mkdir(parents=True, exist_ok=True)
+def write_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
     # Write then swap, so a crash mid-write can't leave a half-written save.
-    tmp = PATH.with_name(PATH.name + ".tmp")
-    tmp.write_text(json.dumps(pet, indent=2, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, PATH)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def save(pet):
+    write_json(PATH, pet)

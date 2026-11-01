@@ -1,8 +1,9 @@
 import argparse
+import json
 import sys
 import time
 
-from tamagotchi import art, hooks, pet as pet_logic, storage
+from tamagotchi import art, claude, hooks, pet as pet_logic, storage
 
 MAX_NAME_LENGTH = 20
 
@@ -25,7 +26,22 @@ def parse_args(argv):
     commands.add_parser("install", help="feed your pet on every commit in this repo")
     commands.add_parser("uninstall", help="remove the hook from this repo")
     commands.add_parser("reset", help="start over with a new egg")
+    commands.add_parser("statusline", help="status line for Claude Code, which also tracks your weekly limit")
     return parser.parse_args(argv)
+
+
+def statusline():
+    # Claude Code runs this constantly, so stay quiet on failure and never touch the pet's save.
+    try:
+        now = time.time()
+        claude.save_limit(json.load(sys.stdin))
+        limit = claude.weekly_limit(now)
+        pet = load_pet(now)
+        feeling = pet_logic.feeling(pet, now, limit_used=limit[0] if limit else 0)
+        print(art.render_statusline(pet, feeling, limit))
+    except Exception:
+        pass
+    return 0
 
 
 def feed_from_commit():
@@ -66,6 +82,8 @@ def main(argv=None):
         return manage_hook(lambda: hooks.install(sys.executable))
     if args.command == "uninstall":
         return manage_hook(hooks.uninstall)
+    if args.command == "statusline":
+        return statusline()
 
     now = time.time()
     pet = load_pet(now)
@@ -86,7 +104,10 @@ def main(argv=None):
         pet = pet_logic.new_pet(now)
 
     storage.save(pet)
-    print(art.render(pet, pet_logic.feeling(pet, now), event))
+    tokens = claude.tokens_today(now)
+    limit = claude.weekly_limit(now)
+    limit_used = limit[0] if limit else 0
+    print(art.render(pet, pet_logic.feeling(pet, now, tokens, limit_used), event, tokens, limit))
     return 0
 
 

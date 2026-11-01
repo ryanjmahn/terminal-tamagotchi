@@ -109,8 +109,47 @@ Rewards stop growing at 200 lines, so a 2000-line commit is a very expensive way
 | `- . -` | Sleepy | 1am to 5am. It will tell you to go to bed. |
 | `╥ ﹏ ╥` | Sad | Nearly out of hunger or mood |
 | `• ﹏ •` | Hungry | About a day since its last snack |
+| `x _ x` | Dead (for now) | Weekly Claude limit used up, until it resets |
+| `◉ ﹏ ◉` | Nervous | 80%+ of your weekly Claude limit used |
+| `◉ ‿ ◉` | Wired | 250k+ Claude Code tokens today |
 | `◕ ‿ ◕` | Happy | Well fed and in a good mood |
 | `• ‿ •` | Content | Everything else |
+
+## Claude Code usage
+
+If you use [Claude Code](https://claude.com/product/claude-code), your pet notices. There's nothing to set up:
+
+```
+   ╭─────────╮
+   │  ◉ ‿ ◉  │   Porky  (lvl 4)
+   ╰─┬─────┬─╯   ♥♥♥♥♡  hunger
+     ┘     └     ★★★★☆  mood
+                 🔥 6-day streak
+                 🤖 412k tokens today
+
+   "did you and claude even sleep?"
+```
+
+Tokens never feed your pet. Commits are still the only food, so it can't level up from you burning tokens. They only change what it shows and says.
+
+The count is today's input and output tokens from the logs in `~/.claude/projects`, leaving out cached tokens. Those logs hold your full conversations, but your pet only uses each message's id, timestamp and token counts, and it doesn't save or send any of it. The log format isn't an official interface, so if it ever changes, the line just disappears.
+
+### Weekly limit
+
+On a Claude subscription, your pet can also watch your weekly limit. It gets nervous at 80% and drops dead at 100%, then comes back when the limit resets, with its level and stats untouched.
+
+Claude Code only shares this percentage with status line commands, so add this to `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "pet statusline"
+  }
+}
+```
+
+Your pet then appears in Claude Code's status line, and `pet` shows the last percentage it saw. That number only updates while Claude Code is running. If you already have a status line, adding this replaces it.
 
 ## Good to know
 

@@ -8,6 +8,11 @@ MAX_STAT = 5
 # Commits bigger than this earn nothing extra, so 2000-line commits aren't worth it.
 MAX_REWARDED_LINES = 200
 ECSTATIC_SECONDS = 3600
+# Claude Code tokens in a day that count as a heavy day. Only changes the face and line, never stats.
+HEAVY_TOKENS = 250_000
+# Percent of the weekly Claude limit. Also only the face and line, and it wears off at the reset.
+NERVOUS_LIMIT = 80
+DEAD_LIMIT = 100
 
 
 def new_pet(now):
@@ -82,17 +87,23 @@ def feed(pet, now, lines=0):
     return "hatched" if old_level == 0 else "leveled"
 
 
-def feeling(pet, now):
+def feeling(pet, now, tokens=0, limit_used=0):
     if pet["level"] == 0:
         return "egg"
+    if limit_used >= DEAD_LIMIT:
+        return "dead"
     if pet["leveled_at"] is not None and 0 <= now - pet["leveled_at"] < ECSTATIC_SECONDS:
         return "ecstatic"
+    if limit_used >= NERVOUS_LIMIT:
+        return "nervous"
     if 1 <= datetime.fromtimestamp(now).hour < 5:
         return "sleepy"
     if pet["hunger"] < 1 or pet["mood"] < 1:
         return "sad"
     if pet["hunger"] <= 3.5:
         return "hungry"
+    if tokens >= HEAVY_TOKENS:
+        return "wired"
     if pet["hunger"] >= 4 and pet["mood"] >= 4:
         return "happy"
     return "content"

@@ -14,6 +14,9 @@ FACES = {
     "sad": "  ╥ ﹏ ╥ ",
     "sleepy": "  - . -  ",
     "ecstatic": "  ★ ▽ ★  ",
+    "wired": "  ◉ ‿ ◉  ",
+    "nervous": "  ◉ ﹏ ◉ ",
+    "dead": "  x _ x  ",
     "egg": "  · · ·  ",
 }
 
@@ -56,6 +59,9 @@ LINES = {
     "sad": ["i have known only hunger", "remember when you used to commit?", "tell my story"],
     "sleepy": ["go to sleep bro 😴", "zzz... merge conflict... zzz", "it's so late, close the laptop"],
     "ecstatic": ["i feel POWERFUL", "look at me. LOOK AT ME.", "new level, same bugs"],
+    "wired": ["did you and claude even sleep?", "that's a lot of tokens, are we ok", "claude's working hard. are you?"],
+    "nervous": ["is it getting low in here or is it just me", "maybe... fewer tokens?", "*sweats in ASCII*"],
+    "dead": ["here lies {name}. out of claude.", "tell claude i loved them", "wake me when the limit resets"],
     "egg": ["*wobbles*", "...tap tap... make a commit to hatch me", "🥚"],
     "fed": ["nom nom 🍪", "delicious diff", "tastes like clean code", "more please"],
     "hatched": ["{name} hatched!! hi!! who are you!!"],
@@ -87,7 +93,28 @@ def reaction(pet, key):
     return random.choice(LINES[key]).format(name=pet["name"])
 
 
-def render(pet, feeling, event=None):
+def format_tokens(tokens):
+    if tokens < 1000:
+        return str(tokens)
+    if tokens < 1_000_000:
+        return f"{tokens // 1000}k"
+    return f"{tokens / 1_000_000:.1f}M"
+
+
+def format_limit(limit):
+    used, seconds_left = limit
+    hours = int(seconds_left // 3600)
+    left = f"{hours}h" if hours < 48 else f"{hours // 24}d"
+    # Round down, so 99.6% doesn't read as 100% while the pet is still alive.
+    return f"{int(used)}% of weekly limit, resets in {left}"
+
+
+def render_statusline(pet, feeling, limit):
+    face = paint(FACES[feeling].strip(), CYAN)
+    return f"{face}  {pet['name']}" + (f"  ·  {format_limit(limit)}" if limit else "")
+
+
+def render(pet, feeling, event=None, tokens=0, limit=None):
     """Draw the pet. `event` is what just happened (see pet.feed), which picks the line."""
     level = "egg" if pet["level"] == 0 else f"lvl {pet['level']}"
     stats = [
@@ -96,6 +123,10 @@ def render(pet, feeling, event=None):
         f"{paint(bar(pet['mood'], '★', '☆'), YELLOW)}  mood",
         f"🔥 {pet['streak']}-day streak",
     ]
+    if tokens:
+        stats.append(f"🤖 {format_tokens(tokens)} tokens today")
+    if limit:
+        stats.append(f"⏳ {format_limit(limit)}")
     rows = form_for(pet["level"])
     face_row = next(i for i, row in enumerate(rows) if FACE_SLOT in row)
 

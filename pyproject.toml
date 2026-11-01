@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "terminal-tamagotchi"
-version = "0.1.0"
+version = "1.0.0"
 description = "An ASCII pet that lives in your terminal and feeds on your git commits."
 requires-python = ">=3.8"
 
