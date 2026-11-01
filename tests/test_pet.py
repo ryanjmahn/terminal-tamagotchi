@@ -83,6 +83,21 @@ class FeedTest(unittest.TestCase):
         self.assertEqual(xp_for(5000), 20)
         self.assertEqual(xp_for(-5), 10)
 
+    def test_feeding_raises_mood_but_not_past_the_top(self):
+        pet = hatched_pet()
+        pet_logic.feed(pet, NOON)
+        self.assertEqual(pet["mood"], 3.5)
+        pet["mood"] = 4.8
+        pet_logic.feed(pet, NOON)
+        self.assertEqual(pet["mood"], 5)
+
+    def test_extending_a_streak_lifts_mood_extra(self):
+        pet = hatched_pet()
+        pet_logic.feed(pet, NOON)
+        pet_logic.feed(pet, NOON + DAY)
+        # 3.5 after the first snack, minus a day of decay, plus 0.5 and 0.5 for the streak.
+        self.assertEqual(pet["mood"], 3.5)
+
     def test_ecstatic_wears_off(self):
         pet = pet_logic.new_pet(NOON)
         pet_logic.feed(pet, NOON)
