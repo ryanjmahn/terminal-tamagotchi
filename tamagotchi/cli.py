@@ -2,8 +2,9 @@ import argparse
 import json
 import sys
 import time
+from pathlib import Path
 
-from tamagotchi import agent, art, claude, hooks, pet as pet_logic, storage
+from tamagotchi import agent, art, claude, hooks, pet as pet_logic, social, storage
 
 MAX_NAME_LENGTH = 20
 
@@ -31,7 +32,41 @@ def parse_args(argv):
     commands.add_parser("install-agent", help="let your pet react to Claude Code")
     commands.add_parser("uninstall-agent", help="stop reacting to Claude Code")
     commands.add_parser("agent-event", help="used by the Claude Code hooks")
+    commands.add_parser("face", help="print just the face, for your shell prompt")
+    share = commands.add_parser("share", help="publish your pet to your GitHub profile repo")
+    share.add_argument("--push", action="store_true", help="also commit and push it")
+    commands.add_parser("profile-update", help="used by the daily GitHub Action")
+    friends = commands.add_parser("friends", help="show the leaderboard, or add and remove friends")
+    friends.add_argument("action", nargs="?", choices=["add", "remove"])
+    friends.add_argument("username", nargs="?")
     return parser.parse_args(argv)
+
+
+def quick_feeling(pet, now):
+    """The feeling without Claude's token count, which is too slow for prompts and status lines."""
+    limit = claude.weekly_limit(now)
+    status = agent.status(now)
+    return pet_logic.feeling(pet, now, 0, limit[0] if limit else 0, status["state"] if status else None)
+
+
+def face():
+    # This runs on every prompt, so failing means an empty string and never an error message.
+    try:
+        now = time.time()
+        print(art.FACES[quick_feeling(load_pet(now), now)].strip())
+    except Exception:
+        pass
+    return 0
+
+
+def friends(action, username):
+    if action == "add":
+        return manage_hook(lambda: social.add_friend(username))
+    if action == "remove":
+        return manage_hook(lambda: social.remove_friend(username))
+    now = time.time()
+    print(social.leaderboard(load_pet(now), now))
+    return 0
 
 
 def current_mood(pet, now):
@@ -90,11 +125,8 @@ def statusline():
     try:
         now = time.time()
         claude.save_limit(json.load(sys.stdin))
-        limit = claude.weekly_limit(now)
-        status = agent.status(now)
         pet = load_pet(now)
-        feeling = pet_logic.feeling(pet, now, 0, limit[0] if limit else 0, status["state"] if status else None)
-        print(art.render_statusline(pet, feeling, limit))
+        print(art.render_statusline(pet, quick_feeling(pet, now), claude.weekly_limit(now)))
     except Exception:
         pass
     return 0
@@ -148,6 +180,14 @@ def main(argv=None):
         return manage_hook(agent.uninstall)
     if args.command == "watch":
         return watch()
+    if args.command == "face":
+        return face()
+    if args.command == "friends":
+        return friends(args.action, args.username)
+    if args.command == "profile-update":
+        return manage_hook(lambda: social.profile_update(Path.cwd(), time.time()))
+    if args.command == "share":
+        return manage_hook(lambda: social.share(load_pet(time.time()), time.time(), args.push))
 
     now = time.time()
     pet = load_pet(now)

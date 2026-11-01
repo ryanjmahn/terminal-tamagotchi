@@ -51,6 +51,10 @@ Your next commit there feeds your pet. You get one pet, shared across every repo
 | `pet feed` | Give it a snack by hand (no judgment) |
 | `pet name <name>` | Rename it (the default is Porky) |
 | `pet watch` | Keep your pet on screen, animated and live (ctrl-c to quit) |
+| `pet face` | Print just the face, for your shell prompt |
+| `pet share` | Publish your pet to your GitHub profile repo (`--push` to commit and push too) |
+| `pet friends` | Show the leaderboard |
+| `pet friends add <user>` | Add a friend by GitHub username (`remove` takes them off) |
 | `pet install` | Feed your pet on every commit in the current repo |
 | `pet uninstall` | Remove the hook from the current repo |
 | `pet install-agent` | Let your pet react to Claude Code |
@@ -184,6 +188,47 @@ This adds hooks to `~/.claude/settings.json` and leaves the rest of the file alo
 
 `pet` plays a quick animation when you run it in a terminal, and `pet watch` keeps it going: your pet blinks, sweats, snores and wiggles depending on its mood. Piped output and terminals under 70 columns just get the still picture.
 
+## Shell prompt
+
+Keep a tiny pet in your prompt. For zsh, add this to `~/.zshrc`:
+
+```sh
+setopt PROMPT_SUBST
+PROMPT='$(pet face 2>/dev/null) '"$PROMPT"
+```
+
+For bash, add this to `~/.bashrc`:
+
+```sh
+PS1='$(pet face 2>/dev/null) '"$PS1"
+```
+
+## GitHub profile pet
+
+Show your pet on your GitHub profile, and watch it get hungry if you stop sharing.
+
+1. Create a public repo named exactly after your username (like `github.com/you/you`) and clone it. GitHub shows that repo's README on your profile.
+2. Run `pet share` inside the clone, then commit and push what it created.
+
+That adds three files: your pet's snapshot (`pet.json`), a section in your README (between markers, so the rest of your README stays yours), and a GitHub Action that redraws your pet every day. To push a file in `.github/workflows`, a fine-grained token needs the **Workflows** permission as well as **Contents**.
+
+The Action runs on GitHub, so it can't see your laptop. It applies the hunger your pet has lost since your last share, and only `pet share --push` brings it back up. Share often, or it will starve in public.
+
+The snapshot is public and holds only your pet's name, XP, hunger, mood, streak, last fed date and last update time.
+
+## Friends
+
+Anyone who has run `pet share` can be on your leaderboard:
+
+```
+$ pet friends add octocat
+$ pet friends
+  1.   ◕ ‿ ◕   Porky (you)                        lvl 4     320 xp  ♥♥♥♥♡  🔥 6
+  2.   • ﹏ •  Mochi (@octocat)                   lvl 2      80 xp  ♥♥♡♡♡  🔥 0
+```
+
+Rankings go by XP, and hunger is worked out from when each pet was last shared. There's no server: your pet just reads each friend's public `pet.json`. That also means scores are self-reported, so this runs on the honor system.
+
 ## Good to know
 
 - **It can't block your commits.** The hook runs after the commit already exists. If anything goes wrong, you get at most a one-line warning.
@@ -207,6 +252,3 @@ Ideas for later:
 - **Sick when CI fails:** a GitHub Action or check that marks the pet sick when builds or tests are red
 - **More agents:** coding agent mode for agents other than Claude Code
 - **Bad-habit reactions:** look scared after a force-push to main
-- **GitHub profile pet:** show it in your profile README with a GitHub Action that updates it daily
-- **Friends:** compare pets with friends, leaderboards
-- **Shell prompt integration:** a tiny pet face in your terminal prompt
