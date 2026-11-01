@@ -17,7 +17,7 @@ Python 3 standard library only, so there's nothing else to install.
 ## Install
 
 ```sh
-git clone https://github.com/YOUR-USERNAME/terminal-tamagotchi.git
+git clone https://github.com/ryanjmahn/terminal-tamagotchi.git
 cd terminal-tamagotchi
 python3 -m pip install -e .
 pet
