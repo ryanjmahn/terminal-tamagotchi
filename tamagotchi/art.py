@@ -83,6 +83,10 @@ def form_for(level):
     return ELDER
 
 
+def reaction(pet, key):
+    return random.choice(LINES[key]).format(name=pet["name"])
+
+
 def render(pet, feeling, event=None):
     """Draw the pet. `event` is what just happened (see pet.feed), which picks the line."""
     level = "egg" if pet["level"] == 0 else f"lvl {pet['level']}"
@@ -102,5 +106,10 @@ def render(pet, feeling, event=None):
         stat = stats[i - face_row] if face_row <= i < face_row + len(stats) else ""
         output.append((art + stat).rstrip())
 
-    line = random.choice(LINES[event or feeling]).format(name=pet["name"])
-    return "\n".join(output + ["", f'   "{line}"'])
+    return "\n".join(output + ["", f'   "{reaction(pet, event or feeling)}"'])
+
+
+def render_short(pet, feeling, event):
+    """One line for the hook, so a commit's output stays readable."""
+    face = paint(FACES[feeling].strip(), CYAN)
+    return f'{face}  {pet["name"]}: "{reaction(pet, event)}"'

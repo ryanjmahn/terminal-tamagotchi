@@ -2,7 +2,7 @@ import argparse
 import sys
 import time
 
-from tamagotchi import art, pet as pet_logic, storage
+from tamagotchi import art, hooks, pet as pet_logic, storage
 
 MAX_NAME_LENGTH = 20
 
@@ -19,10 +19,36 @@ def parse_args(argv):
     commands = parser.add_subparsers(dest="command")
     feed = commands.add_parser("feed", help="give your pet a snack")
     feed.add_argument("--lines", type=int, default=0, help="lines changed, bigger snacks give a little more")
+    feed.add_argument("--commit", action="store_true", help="feed from the latest commit (used by the git hook)")
     name = commands.add_parser("name", help="rename your pet")
     name.add_argument("name")
+    commands.add_parser("install", help="feed your pet on every commit in this repo")
+    commands.add_parser("uninstall", help="remove the hook from this repo")
     commands.add_parser("reset", help="start over with a new egg")
     return parser.parse_args(argv)
+
+
+def feed_from_commit():
+    # Runs inside every commit, so any failure is a small warning and nothing more.
+    # shortcut: amends, rebases and cherry-picks also feed, check `git reflog -1` if that gets abused.
+    try:
+        now = time.time()
+        pet = load_pet(now)
+        event = pet_logic.feed(pet, now, hooks.last_commit_lines())
+        storage.save(pet)
+        print(art.render_short(pet, pet_logic.feeling(pet, now), event))
+    except Exception as error:
+        print(f"pet: couldn't feed your pet ({error}), but your commit is fine", file=sys.stderr)
+    return 0
+
+
+def manage_hook(action):
+    try:
+        print(action())
+    except (hooks.HookError, OSError) as error:
+        print(f"pet: {error}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def confirm(question):
@@ -34,6 +60,13 @@ def confirm(question):
 
 def main(argv=None):
     args = parse_args(argv)
+    if args.command == "feed" and args.commit:
+        return feed_from_commit()
+    if args.command == "install":
+        return manage_hook(lambda: hooks.install(sys.executable))
+    if args.command == "uninstall":
+        return manage_hook(hooks.uninstall)
+
     now = time.time()
     pet = load_pet(now)
     event = None
@@ -55,3 +88,8 @@ def main(argv=None):
     storage.save(pet)
     print(art.render(pet, pet_logic.feeling(pet, now), event))
     return 0
+
+
+# The git hook runs this file directly, so it doesn't depend on `pet` being on PATH.
+if __name__ == "__main__":
+    sys.exit(main())
