@@ -1,4 +1,14 @@
+<div align="center">
+
 # Terminal Tamagotchi 🐣
+
+An ASCII pet that lives in your terminal and feeds on your git commits.
+
+[![Stars](https://img.shields.io/github/stars/ryanjmahn/terminal-tamagotchi?style=flat&color=black)](https://github.com/ryanjmahn/terminal-tamagotchi/stargazers)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-black.svg)](https://www.python.org)
+[![Dependencies: none](https://img.shields.io/badge/Dependencies-none-black.svg)](pyproject.toml)
+
+</div>
 
 ```
    ╭─────────╮
@@ -10,11 +20,39 @@
    "nom nom 🍪"
 ```
 
-A little ASCII pet that lives in your terminal and feeds on your git commits. Commit and it thrives. Stop committing and it will look at you like this: `╥ ﹏ ╥`
+Commit and your pet thrives. Stop committing and it will look at you like this: `╥ ﹏ ╥`. That is the whole idea. Terminal Tamagotchi hooks into your git repos, turns every commit into a snack, and works out how hungry your pet got while you were away.
 
-Python 3 standard library only, so there's nothing else to install.
+It is written with the Python 3 standard library only, so there's nothing else to install. You get one pet, shared across every repo.
 
-## Install
+> **It can't block your commits.** The hook runs after the commit already exists. If anything goes wrong, you get at most a one-line warning.
+
+## Why this exists
+
+A streak counter is easy to ignore. A small face that gets sadder the longer you stay away is harder. Terminal Tamagotchi puts that face where you already work, with no account to create and no background process to keep running.
+
+## Features
+
+- Commit feeding. Every commit in a repo with the hook installed gives your pet hunger, XP, and mood.
+- Streaks. Consecutive days with a commit keep the streak alive and lift your pet's mood.
+- Evolution. Your pet hatches on its first commit, then changes form as it levels up.
+- Moods. Twelve faces react to hunger, the time of day, and what Claude Code is doing.
+- Animations. Your pet blinks, sweats, snores, and wiggles. `pet watch` keeps it on screen, live.
+- [Claude Code usage](#claude-code-usage). See today's token count, and watch your pet panic as your weekly limit runs out.
+- [Coding agent mode](#coding-agent-mode). Your pet follows a Claude Code session and tells you when Claude needs your approval.
+- [Shell prompt](#shell-prompt). Keep a tiny pet in your prompt.
+- [GitHub profile pet](#github-profile-pet). Show your pet on your profile, where it can starve in public.
+- [Friends leaderboard](#friends). Rank your pet against your friends' by XP, with no server involved.
+
+## How it works
+
+1. `pet install` adds a `post-commit` hook to the current repo.
+2. You commit, and the hook feeds your pet based on the size of the commit.
+3. Your pet's state is saved to `~/.terminal-tamagotchi/pet.json`.
+4. The next time your pet wakes up, it works out what it lost since last time.
+
+There's no background process. Hunger and mood are worked out from the time that has passed, so your pet is always up to date when you look at it.
+
+## Quick start
 
 ```sh
 git clone https://github.com/ryanjmahn/terminal-tamagotchi.git
@@ -23,7 +61,16 @@ python3 -m pip install -e .
 pet
 ```
 
-If pip says `externally-managed-environment`, or complains that `setup.py` wasn't found (the older pip that ships with macOS does this), install into a virtual environment instead:
+Then go to any repo you want to feed your pet from, and install the hook:
+
+```sh
+cd ~/code/some-project
+pet install
+```
+
+Your next commit there feeds your pet.
+
+**Pip says `externally-managed-environment`, or that `setup.py` wasn't found?** The older pip that ships with macOS does the second one. Install into a virtual environment instead:
 
 ```sh
 python3 -m venv .venv
@@ -33,15 +80,6 @@ python3 -m pip install -e .
 ```
 
 The `pet` command only works while that environment is active, so run `source .venv/bin/activate` again in new terminals. Installed hooks keep working either way.
-
-Then go to any repo you want to feed your pet from, and install the hook:
-
-```sh
-cd ~/code/some-project
-pet install
-```
-
-Your next commit there feeds your pet. You get one pet, shared across every repo.
 
 ## Commands
 
@@ -75,7 +113,7 @@ Rewards stop growing at 200 lines, so a 2000-line commit is a very expensive way
 
 **Streaks** count consecutive calendar days with at least one commit. Extending your streak adds another half star of mood. Miss a whole day and it goes back to zero.
 
-**Time passes even when you're away.** There's no background process. Each time your pet wakes up, it works out what it lost since last time:
+**Time passes even when you're away:**
 
 - Hunger drops 1.5 hearts a day, so it's noticeably hungry after a day and very hungry after three.
 - Mood drops 1 star a day.
@@ -231,13 +269,22 @@ Rankings go by XP, and hunger is worked out from when each pet was last shared. 
 
 ## Good to know
 
-- **It can't block your commits.** The hook runs after the commit already exists. If anything goes wrong, you get at most a one-line warning.
 - **It's safe with your existing hooks.** If you already have a shell `post-commit` hook, your pet is added alongside it, and `pet uninstall` puts it back exactly as it was. If it can't edit your hook safely, it leaves it alone and tells you.
 - **Hooks are per repo and don't get pushed.** Anyone who clones a repo, including you on another laptop, has to run `pet install` there.
 - **Amends, rebases and cherry-picks count as commits too.** Yes, you can cheat. Your pet won't know. You will.
 - **Your save file** is `~/.terminal-tamagotchi/pet.json`.
 
-## Development
+## Tech stack
+
+- Python 3.8+ and its standard library, with no third-party dependencies
+- Git `post-commit` hooks for feeding
+- Claude Code hooks and status line for the agent features
+- GitHub Actions and public `pet.json` files for the profile pet and leaderboard
+- A local JSON file for your save
+
+## Contributing
+
+Issues and pull requests are welcome. To run the tests:
 
 ```sh
 python3 -m unittest discover tests
@@ -252,3 +299,11 @@ Ideas for later:
 - **Sick when CI fails:** a GitHub Action or check that marks the pet sick when builds or tests are red
 - **More agents:** coding agent mode for agents other than Claude Code
 - **Bad-habit reactions:** look scared after a force-push to main
+
+## Credits
+
+Built and maintained by [@ryanjmahn](https://github.com/ryanjmahn).
+
+## Star the repo
+
+If your pet makes you commit a little more often, star the repo. It is the simplest way to help the next person find it.
